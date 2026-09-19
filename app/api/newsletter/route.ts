@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const maxDuration = 60;
+
 const BASE = 'https://api.systeme.io/api';
 
 async function sioFetch(path: string) {
