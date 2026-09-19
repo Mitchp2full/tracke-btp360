@@ -58,9 +58,8 @@ export default async function Dashboard() {
             {list[0]?.updated_at ? `Sync : ${formatDate(list[0].updated_at)}` : 'Pas encore synchronisé'}
           </span>
           <div className="flex gap-2">
-            <a href="/" style={{ background: '#3b82f6', color: '#fff', padding: '6px 14px', borderRadius: 8, fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>
-              LinkedIn
-            </a>
+            <a href="/" style={{ background: '#3b82f6', color: '#fff', padding: '6px 14px', borderRadius: 8, fontSize: 13, textDecoration: 'none', fontWeight: 600 }}>LinkedIn</a>
+            <a href="/newsletter" style={{ background: '#1a1a1a', color: '#666', padding: '6px 14px', borderRadius: 8, fontSize: 13, textDecoration: 'none' }}>Newsletter</a>
           </div>
         </div>
       </header>
