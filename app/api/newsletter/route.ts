@@ -14,16 +14,18 @@ async function sioFetch(path: string) {
   return res.json();
 }
 
-// Récupère tous les contacts en paginant
+// Limite à 3 pages max (300 contacts) pour respecter le timeout Vercel
 async function getAllContacts() {
   const contacts: Record<string, unknown>[] = [];
   let after: number | null = null;
+  let pages = 0;
 
-  while (true) {
+  while (pages < 3) {
     const url = `/contacts?limit=100${after ? `&after=${after}` : ''}`;
     const data = await sioFetch(url);
     const items: Record<string, unknown>[] = data.items || [];
     contacts.push(...items);
+    pages++;
     if (!data.hasMore || items.length === 0) break;
     after = items[items.length - 1].id as number;
   }
