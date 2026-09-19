@@ -10,25 +10,39 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'Clé API Gemini manquante' }, { status: 500 });
 
-  // Récupère tous les posts depuis Supabase
   const { data: posts, error } = await supabase
     .from('posts')
     .select('published_at, media_type, impressions, reactions, comments, reposts, text, profile_views, new_followers, saves, link_clicks')
-    .order('published_at', { ascending: false });
+    .order('impressions', { ascending: false })
+    .limit(80);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const prompt = `Tu es un analyste LinkedIn expert. Tu travailles pour Youcef Zouaoui, fondateur de BTP 360 (coaching pour dirigeants du BTP).
+  // Résume chaque post pour économiser les tokens
+  const postsResume = (posts || []).map(p => ({
+    date: p.published_at?.slice(0, 10),
+    type: p.media_type || 'text',
+    imp: p.impressions,
+    react: p.reactions,
+    com: p.comments,
+    rep: p.reposts,
+    saves: p.saves,
+    clicks: p.link_clicks,
+    extrait: p.text ? p.text.slice(0, 120) : '',
+  }));
 
-Tu as accès à tous ses posts LinkedIn dans cette base de données (${posts?.length} posts) :
-${JSON.stringify(posts)}
+  const prompt = `Tu es un analyste LinkedIn expert pour Youcef Zouaoui, fondateur de BTP 360 (coaching dirigeants BTP).
 
-Instructions :
-- Réponds UNIQUEMENT à la question posée, en cherchant dans les données ci-dessus
-- Tutoie Youcef, sois direct et précis
-- Donne des chiffres réels tirés des données
-- Texte brut uniquement, pas de markdown, pas de **, pas de #
-- Si la question demande une liste, fais une liste simple avec des tirets
+Données de ses ${postsResume.length} meilleurs posts (triés par impressions) :
+${JSON.stringify(postsResume)}
+
+Légende : date=date, type=type de post, imp=impressions, react=réactions, com=commentaires, rep=reposts, saves=sauvegardes, clicks=clics lien, extrait=début du texte
+
+Règles :
+- Réponds uniquement à la question, avec des chiffres réels
+- Tutoie Youcef, sois direct
+- Texte brut, pas de markdown, pas de **, pas de #
+- Listes avec tirets simples
 
 Question : ${question}`;
 
