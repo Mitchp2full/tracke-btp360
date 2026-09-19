@@ -26,7 +26,10 @@ async function getAllContacts() {
   return contacts;
 }
 
-async function getData() {
+async function getData(): Promise<{ stats: { total: number; newThisMonth: number; newThisWeek: number; unsubscribed: number; bounced: number }; tags: { id: number; name: string; count: number }[]; growth: Record<string, number>; contacts: { id: number; email: string; registeredAt: string; unsubscribed: boolean; bounced: boolean; tags: { id: number; name: string }[]; firstName: string }[] } | { error: string }> {
+  if (!process.env.SYSTEMEIO_API_KEY) {
+    return { error: 'Clé API SYSTEMEIO_API_KEY manquante — vérifie les variables d\'environnement Vercel.' };
+  }
   try {
     const [contacts, tagsData] = await Promise.all([
       getAllContacts(),
@@ -77,12 +80,14 @@ async function getData() {
     return { stats: { total, newThisMonth, newThisWeek, unsubscribed, bounced }, tags: tagsWithCount, growth, contacts: recentContacts };
   } catch (err) {
     console.error('[Newsletter]', err);
-    return null;
+    return { error: err instanceof Error ? err.message : 'Erreur inconnue' };
   }
 }
 
 export default async function NewsletterPage() {
-  const data = await getData();
+  const result = await getData();
+  const error = result && 'error' in result ? result.error : null;
+  const data = result && !('error' in result) ? result : null;
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#f1f1f1' }}>
@@ -100,15 +105,16 @@ export default async function NewsletterPage() {
       </header>
 
       <main className="px-8 py-6 max-w-screen-xl mx-auto">
-        {!data ? (
-          <div style={{ background: '#141414', border: '1px solid #1e1e1e' }} className="rounded-xl p-16 text-center">
+        {error ? (
+          <div style={{ background: '#141414', border: '1px solid #2a1a1a' }} className="rounded-xl p-16 text-center">
             <div className="text-5xl mb-4">⚠️</div>
-            <p className="text-white font-semibold">Erreur de connexion à systeme.io</p>
-            <p className="text-sm mt-2" style={{ color: '#555' }}>Vérifie la clé API dans .env.local</p>
+            <p className="text-white font-semibold mb-2">Erreur de connexion à systeme.io</p>
+            <p className="text-sm mt-2 font-mono" style={{ color: '#ef4444' }}>{error}</p>
+            <p className="text-xs mt-4" style={{ color: '#444' }}>Vérifie que SYSTEMEIO_API_KEY est bien ajoutée dans les variables d&apos;environnement Vercel</p>
           </div>
-        ) : (
+        ) : data ? (
           <NewsletterView data={data} />
-        )}
+        ) : null}
       </main>
     </div>
   );
